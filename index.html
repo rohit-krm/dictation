@@ -18,19 +18,19 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col">
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col">
 
-    <header class="w-full bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 py-4 px-6 shadow-sm flex items-center justify-between">
+    <header class="w-full bg-slate-900 border-b border-slate-800 py-4 px-6 shadow-sm flex items-center justify-between">
         <div class="flex items-center space-x-3">
             <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
                 <i class="fa-solid fa-microphone-lines text-xl"></i>
             </div>
             <div>
                 <h1 class="text-lg font-bold tracking-tight">Voice Dictator</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Adaptive Cross-Device Real-time Transcription</p>
+                <p class="text-xs text-slate-400">Adaptive Cross-Device Real-time Transcription</p>
             </div>
         </div>
-        <div id="statusIndicator" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+        <div id="statusIndicator" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
             <span class="w-2 h-2 rounded-full bg-slate-400" id="statusDot"></span>
             <span id="statusText">Ready</span>
         </div>
@@ -38,38 +38,38 @@
 
     <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col space-y-4">
         
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800">
             <div class="flex items-center space-x-2">
                 <button id="micBtn" onclick="toggleDictation()" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md active:scale-95 cursor-pointer">
                     <i id="micIcon" class="fa-solid fa-microphone"></i>
                     <span id="micBtnText">Start Dictating</span>
                 </button>
-                <button onclick="clearText()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition text-slate-700 dark:text-slate-300 cursor-pointer">
+                <button onclick="clearText()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-800 hover:bg-slate-700 transition text-slate-300 border border-slate-700 cursor-pointer">
                     <i class="fa-solid fa-trash-can mr-1.5"></i> Clear
                 </button>
             </div>
             
             <div class="flex items-center space-x-3 text-sm">
-                <div class="flex items-center space-x-1.5 text-slate-500 dark:text-slate-400">
+                <div class="flex items-center space-x-1.5 text-slate-400">
                     <i class="fa-solid fa-language"></i>
-                    <select id="languageSelect" class="bg-transparent font-medium focus:outline-none cursor-pointer">
-                        <option value="hi-IN" class="bg-white dark:bg-slate-800">हिन्दी (Hindi)</option>
-                        <option value="en-US" class="bg-white dark:bg-slate-800">English (US)</option>
+                    <select id="languageSelect" class="bg-transparent font-medium focus:outline-none cursor-pointer text-slate-200">
+                        <option value="hi-IN" class="bg-slate-900">हिन्दी (Hindi)</option>
+                        <option value="en-US" class="bg-slate-900">English (US)</option>
                     </select>
                 </div>
-                <button onclick="copyText()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition cursor-pointer">
+                <button onclick="copyText()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-950/50 text-indigo-400 hover:bg-indigo-900/50 transition border border-indigo-900/50 cursor-pointer">
                     <i class="fa-regular fa-copy mr-1.5"></i> Copy
                 </button>
             </div>
         </div>
 
-        <div id="timeoutNotice" class="hidden items-center justify-between bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 px-4 py-2 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+        <div id="timeoutNotice" class="hidden items-center justify-between bg-amber-950/30 border border-amber-900/50 px-4 py-2 rounded-xl text-xs text-amber-300">
             <span><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> 30 सेकंड तक कोई आवाज़ न मिलने के कारण डिक्टेशन अपने आप बंद हो गई।</span>
             <button onclick="dismissNotice()" class="font-bold underline cursor-pointer">Dismiss</button>
         </div>
 
-        <div class="flex-1 relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[300px]">
-            <textarea id="transcriptBox" placeholder="डिक्टेशन शुरू करने के लिए ऊपर 'Start Dictating' बटन पर क्लिक करें और बोलना शुरू करें..." class="flex-1 w-full p-4 sm:p-6 bg-transparent resize-none focus:outline-none text-base sm:text-lg leading-relaxed text-slate-800 dark:text-slate-100 placeholder-slate-400"></textarea>
+        <div class="flex-1 relative flex flex-col bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden min-h-[300px]">
+            <textarea id="transcriptBox" placeholder="डिक्टेशन शुरू करने के लिए ऊपर 'Start Dictating' बटन पर क्लिक करें और बोलना शुरू करें..." class="flex-1 w-full p-4 sm:p-6 bg-transparent resize-none focus:outline-none text-base sm:text-lg leading-relaxed text-slate-100 placeholder-slate-500"></textarea>
             
             <div id="activeIndicator" class="hidden absolute bottom-4 right-4 bg-red-600/90 backdrop-blur text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 pulse-ring pointer-events-none">
                 <i class="fa-solid fa-microphone-lines animate-pulse"></i>
@@ -84,9 +84,9 @@
         let isListening = false;
         let silenceTimer = null;
         let finalizedBaseText = '';
-        const TIMEOUT_LIMIT = 30000; // 30 seconds silence timeout
+        const TIMEOUT_LIMIT = 30000;
 
-        // Detect if user is on a mobile device (Android/iOS)
+        // Detect mobile device to apply single-shot continuous stream without restarting loops that trigger audio beeps
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         const micBtn = document.getElementById('micBtn');
@@ -100,13 +100,13 @@
         const timeoutNotice = document.getElementById('timeoutNotice');
 
         if (!SpeechRecognition) {
-            alert('आपका ब्राउज़र Speech Recognition API को सपोर्ट नहीं करता है। कृपया Google Chrome का उपयोग करें।');
+            alert('आपका ब्राउज़र Speech Recognition API को सपोर्ट नहीं करता है।');
         } else {
             recognition = new SpeechRecognition();
             
-            // ADAPTIVE ARCHITECTURE:
-            // Laptop: continuous = true for long uninterrupted fluid typing.
-            // Mobile: continuous = false to prevent mobile OS speech buffer loop bugs and duplication.
+            // ARCHITECTURE:
+            // Laptop: continuous = true
+            // Mobile: continuous = false (Prevents mobile OS speech beep cycles and loop bugs)
             recognition.continuous = !isMobile;
             recognition.interimResults = true;
             recognition.lang = languageSelect.value;
@@ -147,28 +147,19 @@
 
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
-                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    stopDictation();
-                }
             };
 
             recognition.onend = () => {
-                // For Mobile: Seamlessly trigger auto-restart in single-shot mode so typing continues smoothly without looping the buffer.
-                if (isListening && isMobile) {
-                    try {
-                        finalizedBaseText = transcriptBox.value ? transcriptBox.value.trim() + ' ' : '';
-                        recognition.start();
-                    } catch (e) {
-                        stopDictation();
-                    }
-                } else if (!isMobile && isListening) {
+                // On mobile, DO NOT auto-restart recognition in a loop. Let it finish cleanly 
+                // when the user pauses, completely eliminating annoying microphone beep sounds.
+                if (!isMobile && isListening) {
                     try {
                         recognition.start();
                     } catch (e) {
                         stopDictation();
                     }
                 } else {
-                    updateUIState(false);
+                    stopDictation();
                 }
             };
         }
