@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="hi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Dictator Web App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col">
+
+    <header class="w-full bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 py-4 px-6 shadow-sm flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+                <i class="fa-solid fa-microphone-lines text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight">Voice Dictator</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Fast, Real-time & Accurate Transcription</p>
+            </div>
+        </div>
+        <div id="statusIndicator" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+            <span class="w-2 h-2 rounded-full bg-slate-400" id="statusDot"></span>
+            <span id="statusText">Ready</span>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col space-y-4">
+        
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center space-x-2">
+                <button id="micBtn" onclick="toggleDictation()" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md active:scale-95 cursor-pointer">
+                    <i id="micIcon" class="fa-solid fa-microphone"></i>
+                    <span id="micBtnText">Start Dictating</span>
+                </button>
+                <button onclick="clearText()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <i class="fa-solid fa-trash-can mr-1.5"></i> Clear
+                </button>
+            </div>
+            
+            <div class="flex items-center space-x-3 text-sm">
+                <div class="flex items-center space-x-1.5 text-slate-500 dark:text-slate-400">
+                    <i class="fa-solid fa-language"></i>
+                    <select id="languageSelect" class="bg-transparent font-medium focus:outline-none cursor-pointer">
+                        <option value="hi-IN" class="bg-white dark:bg-slate-800">हिन्दी (Hindi)</option>
+                        <option value="en-US" class="bg-white dark:bg-slate-800">English (US)</option>
+                    </select>
+                </div>
+                <button onclick="copyText()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition cursor-pointer">
+                    <i class="fa-regular fa-copy mr-1.5"></i> Copy
+                </button>
+            </div>
+        </div>
+
+        <div id="timeoutNotice" class="hidden items-center justify-between bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 px-4 py-2 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+            <span><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> 30 सेकंड तक कोई आवाज़ न मिलने के कारण डिक्टेशन अपने आप बंद हो गई।</span>
+            <button onclick="dismissNotice()" class="font-bold underline cursor-pointer">Dismiss</button>
+        </div>
+
+        <div class="flex-1 relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <textarea id="transcriptBox" placeholder="डिक्टेशन शुरू करने के लिए ऊपर 'Start Dictating' बटन पर क्लिक करें और बोलना शुरू करें..." class="flex-1 w-full p-4 sm:p-6 bg-transparent resize-none focus:outline-none text-base sm:text-lg leading-relaxed text-slate-800 dark:text-slate-100 placeholder-slate-400"></textarea>
+            
+            <div id="activeIndicator" class="hidden absolute bottom-4 right-4 bg-red-600/90 backdrop-blur text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 pulse-ring pointer-events-none">
+                <i class="fa-solid fa-microphone-lines animate-pulse"></i>
+                <span class="text-xs font-semibold">Listening actively... (30s timeout)</span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isListening = false;
+        let silenceTimer = null;
+        const TIMEOUT_LIMIT = 30000; // 30 seconds silence timeout
+
+        const micBtn = document.getElementById('micBtn');
+        const micIcon = document.getElementById('micIcon');
+        const micBtnText = document.getElementById('micBtnText');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const transcriptBox = document.getElementById('transcriptBox');
+        const activeIndicator = document.getElementById('activeIndicator');
+        const languageSelect = document.getElementById('languageSelect');
+        const timeoutNotice = document.getElementById('timeoutNotice');
+
+        if (!SpeechRecognition) {
+            alert('आपका ब्राउज़र Speech Recognition API को सपोर्ट नहीं करता है। कृपया Google Chrome का उपयोग करें।');
+        } else {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = languageSelect.value;
+
+            languageSelect.addEventListener('change', () => {
+                recognition.lang = languageSelect.value;
+                if (isListening) {
+                    stopDictation();
+                    startDictation();
+                }
+            });
+
+            recognition.onstart = () => {
+                isListening = true;
+                updateUIState(true);
+                resetSilenceTimer();
+            };
+
+            recognition.onresult = (event) => {
+                resetSilenceTimer(); // Reset silence timeout on speech activity
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+                    transcriptBox.value += (transcriptBox.value ? ' ' : '') + finalTranscript.trim();
+                    transcriptBox.scrollTop = transcriptBox.scrollHeight;
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    stopDictation();
+                    alert('माइक्रोफ़ोन की अनुमति नहीं दी गई है। कृपया ब्राउज़र सेटिंग्स चेक करें।');
+                }
+            };
+
+            recognition.onend = () => {
+                // If user didn't explicitly click stop, keep it running smoothly (continuous loop)
+                if (isListening) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        stopDictation();
+                    }
+                } else {
+                    updateUIState(false);
+                }
+            };
+        }
+
+        function toggleDictation() {
+            if (!SpeechRecognition) return;
+            if (isListening) {
+                stopDictation();
+            } else {
+                startDictation();
+            }
+        }
+
+        function startDictation() {
+            dismissNotice();
+            try {
+                recognition.lang = languageSelect.value;
+                recognition.start();
+            } catch (e) {
+                console.log('Recognition start error:', e);
+            }
+        }
+
+        function stopDictation() {
+            isListening = false;
+            clearTimeout(silenceTimer);
+            try {
+                recognition.stop();
+            } catch (e) {}
+            updateUIState(false);
+        }
+
+        function updateUIState(listening) {
+            if (listening) {
+                micBtn.className = "flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition shadow-md active:scale-95 cursor-pointer";
+                micIcon.className = "fa-solid fa-stop";
+                micBtnText.innerText = "Stop Dictating";
+                statusDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                statusText.innerText = "Listening...";
+                activeIndicator.classList.remove('hidden');
+            } else {
+                micBtn.className = "flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md active:scale-95 cursor-pointer";
+                micIcon.className = "fa-solid fa-microphone";
+                micBtnText.innerText = "Start Dictating";
+                statusDot.className = "w-2 h-2 rounded-full bg-slate-400";
+                statusText.innerText = "Ready";
+                activeIndicator.classList.add('hidden');
+            }
+        }
+
+        function resetSilenceTimer() {
+            clearTimeout(silenceTimer);
+            silenceTimer = setTimeout(() => {
+                if (isListening) {
+                    stopDictation();
+                    showTimeoutNotice();
+                }
+            }, TIMEOUT_LIMIT);
+        }
+
+        function showTimeoutNotice() {
+            timeoutNotice.classList.remove('hidden');
+            timeoutNotice.classList.add('flex');
+        }
+
+        function dismissNotice() {
+            timeoutNotice.classList.remove('flex');
+            timeoutNotice.classList.add('hidden');
+        }
+
+        function clearText() {
+            transcriptBox.value = '';
+        }
+
+        function copyText() {
+            if (!transcriptBox.value) return;
+            transcriptBox.select();
+            document.execCommand('copy');
+            
+            const originalText = statusText.innerText;
+            statusText.innerText = "Copied to clipboard!";
+            setTimeout(() => {
+                if (!isListening) statusText.innerText = "Ready";
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
