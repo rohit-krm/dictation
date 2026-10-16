@@ -14,7 +14,7 @@
         }
         @keyframes pulse-ring {
             0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.7; }
+            50% { transform: scale(1.05); opacity: 0.7; }
         }
     </style>
 </head>
@@ -27,7 +27,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-bold tracking-tight">Voice Dictator</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Fast, Real-time & Accurate Transcription</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Universal Cross-Device Real-time Transcription</p>
             </div>
         </div>
         <div id="statusIndicator" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
@@ -68,7 +68,7 @@
             <button onclick="dismissNotice()" class="font-bold underline cursor-pointer">Dismiss</button>
         </div>
 
-        <div class="flex-1 relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="flex-1 relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[300px]">
             <textarea id="transcriptBox" placeholder="डिक्टेशन शुरू करने के लिए ऊपर 'Start Dictating' बटन पर क्लिक करें और बोलना शुरू करें..." class="flex-1 w-full p-4 sm:p-6 bg-transparent resize-none focus:outline-none text-base sm:text-lg leading-relaxed text-slate-800 dark:text-slate-100 placeholder-slate-400"></textarea>
             
             <div id="activeIndicator" class="hidden absolute bottom-4 right-4 bg-red-600/90 backdrop-blur text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 pulse-ring pointer-events-none">
@@ -83,6 +83,7 @@
         let recognition = null;
         let isListening = false;
         let silenceTimer = null;
+        let finalizedBaseText = '';
         const TIMEOUT_LIMIT = 30000; // 30 seconds silence timeout
 
         const micBtn = document.getElementById('micBtn');
@@ -113,39 +114,42 @@
 
             recognition.onstart = () => {
                 isListening = true;
+                finalizedBaseText = transcriptBox.value ? transcriptBox.value.trim() + ' ' : '';
                 updateUIState(true);
                 resetSilenceTimer();
             };
 
             recognition.onresult = (event) => {
-                resetSilenceTimer(); // Reset silence timeout on speech activity
+                resetSilenceTimer(); 
                 let interimTranscript = '';
-                let finalTranscript = '';
+                let currentFinalSegment = '';
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript + ' ';
+                        currentFinalSegment += event.results[i][0].transcript + ' ';
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
 
-                if (finalTranscript) {
-                    transcriptBox.value += (transcriptBox.value ? ' ' : '') + finalTranscript.trim();
-                    transcriptBox.scrollTop = transcriptBox.scrollHeight;
+                if (currentFinalSegment) {
+                    finalizedBaseText += currentFinalSegment;
                 }
+
+                // Combine base finalized text with current interim output safely to prevent mobile duplication loops
+                transcriptBox.value = finalizedBaseText + interimTranscript;
+                transcriptBox.scrollTop = transcriptBox.scrollHeight;
             };
 
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     stopDictation();
-                    alert('माइक्रोफ़ोन की अनुमति नहीं दी गई है। कृपया ब्राउज़र सेटिंग्स चेक करें।');
                 }
             };
 
             recognition.onend = () => {
-                // If user didn't explicitly click stop, keep it running smoothly (continuous loop)
+                // Keep continuous connection stable on mobile and desktop without aggressive restarts
                 if (isListening) {
                     try {
                         recognition.start();
@@ -226,6 +230,7 @@
 
         function clearText() {
             transcriptBox.value = '';
+            finalizedBaseText = '';
         }
 
         function copyText() {
